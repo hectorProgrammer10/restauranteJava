@@ -2,8 +2,11 @@ package com.example.model;
 
 public class Mesa {
   private boolean ocupada;
+  private int id;
 
-  public Mesa() {
+  // Constructor con ID
+  public Mesa(int id) {
+    this.id = id;
     this.ocupada = false;
   }
 
@@ -21,5 +24,9 @@ public class Mesa {
 
   public boolean isOcupada() {
     return ocupada;
+  }
+
+  public int getId() {
+    return id;
   }
 }
