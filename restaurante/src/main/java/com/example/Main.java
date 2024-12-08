@@ -14,7 +14,7 @@ public class Main {
   public static void main(String[] args) {
     // Crear las mesas
     List<Mesa> mesas = new ArrayList<>();
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 10; i++) {
       mesas.add(new Mesa(i));
     }
 

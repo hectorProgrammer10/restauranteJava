@@ -45,16 +45,37 @@ public class Animacion extends GameApplication {
     // Configurar fondo y elementos iniciales
     Texture fondo = getAssetLoader().loadTexture("restaurante.png");
     entityBuilder().at(0, 0).view(fondo).buildAndAttach();
+    Texture cocinero = getAssetLoader().loadTexture("cocinero.png");
+    entityBuilder().at(950, 330).view(cocinero).buildAndAttach();
 
     List<Mesa> mesas = new ArrayList<>();
     for (int i = 0; i < 10; i++) { // Por ejemplo, 10 mesas
       mesas.add(new Mesa(i + 1));
+      generarMesas(i);
     }
     monitor = new Monitor(mesas);
     this.simulator = new RestaurantSimulator(monitor);
-
     // Iniciar simulación
     iniciarSimulacion();
+  }
+
+  private void generarMesas(int id) {
+    int inc = 100 * id;
+    int mesaLugarX = 250 + inc;
+    int mesaLugarY = 400;
+    if (id > 2 && id < 6) {
+      mesaLugarY = 530;
+      mesaLugarX = -50 + inc;
+    }
+    if (id > 5) {
+      mesaLugarY = 660;
+      mesaLugarX = -350 + inc;
+    }
+    Texture mesa = getAssetLoader().loadTexture("mesa.png");
+    Entity entidadMesa = entityBuilder()
+        .at(mesaLugarX, mesaLugarY) // Punto inicial
+        .view(mesa)
+        .buildAndAttach();
   }
 
   private void iniciarSimulacion() {
