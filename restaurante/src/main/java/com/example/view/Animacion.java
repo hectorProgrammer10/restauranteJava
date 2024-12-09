@@ -40,6 +40,7 @@ public class Animacion extends GameApplication {
     settings.setTitle("Simulación Restaurante");
   }
 
+  // d
   @Override
   protected void initGame() {
     // Configurar fondo y elementos iniciales
