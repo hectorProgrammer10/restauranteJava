@@ -25,3 +25,5 @@ public class Monitor {
     mesa.liberar();
   }
 }
+
+// tienes que asignar la mesa desde Animacion

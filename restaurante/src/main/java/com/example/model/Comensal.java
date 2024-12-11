@@ -2,22 +2,22 @@ package com.example.model;
 
 public class Comensal {
   private final int id;
-  private boolean atendido;
+  private EstadoComensal atendido;
 
   public Comensal(int id) {
     this.id = id;
-    this.atendido = false;
+    this.atendido = EstadoComensal.ESPERANDO;
   }
 
   public int getId() {
     return id;
   }
 
-  public boolean isAtendido() {
+  public EstadoComensal isAtendido() {
     return atendido;
   }
 
-  public void setAtendido(boolean atendido) {
+  public void setAtendido(EstadoComensal atendido) {
     this.atendido = atendido;
   }
 }

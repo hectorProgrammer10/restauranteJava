@@ -16,11 +16,15 @@ import javafx.util.Duration;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.almasb.fxgl.dsl.FXGL.*;
 
+//tools--
 import com.example.model.Poisson;
+import com.example.notify.StatusMesa;
+import com.example.controller.RestauranteMonitor;
 
 public class Animacion extends GameApplication {
   private Monitor monitor;
@@ -32,9 +36,14 @@ public class Animacion extends GameApplication {
   private RestaurantSimulator simulator;
   private AtomicInteger comensalCounter = new AtomicInteger(1);
   private Poisson poisson = new Poisson(1); // comensales por segundo
+  private StatusMesa statusMesa = new StatusMesa();
+  List<Thread> hilosComensales = new ArrayList<>();
+  RestauranteMonitor restaurante = new RestauranteMonitor();
+  // crear la variable Mesa para imprimirla
 
   // Constructor adicional para recibir el simulador
-  public Animacion(RestaurantSimulator simulator) {
+  public Animacion(
+      RestaurantSimulator simulator) {
     this.simulator = simulator;
 
   }
@@ -59,7 +68,7 @@ public class Animacion extends GameApplication {
     entityBuilder().at(620, 370).view(mesero).buildAndAttach();
 
     List<Mesa> mesas = new ArrayList<>();
-    for (int i = 0; i < 10; i++) { // Por ejemplo, 10 mesas
+    for (int i = 0; i < 10; i++) { // 10 mesas
       mesas.add(new Mesa(i + 1));
       generarMesas(i);
     }
@@ -91,12 +100,47 @@ public class Animacion extends GameApplication {
 
   private void iniciarSimulacion() {
     double nextArrivalTime = poisson.getNextArrivalTime();
-    run(() -> {
+    CompletableFuture.runAsync(() -> {
+      showMessage("se inicio programa");
       int idComensal = comensalCounter.getAndIncrement();
-      Comensal comensal = new Comensal(idComensal);
-      agregarComensalVisual(idComensal);
-      simulator.llegadaComensal(comensal);
-    }, Duration.seconds(nextArrivalTime)); // Cada 3 segundos llega un nuevo comensal
+      boolean sigue = true;
+      while (sigue) {
+        Comensal comensal = new Comensal(idComensal);
+        Thread hiloComensal = new Thread(() -> {
+          try {
+            Timeline timeline = new Timeline(
+                new KeyFrame(Duration.seconds(nextArrivalTime)));
+            timeline.setCycleCount(1);
+            timeline.play();
+            boolean pudoEntrar = false;
+            while (!pudoEntrar) {
+              pudoEntrar = restaurante.intentarEntrar(comensal);
+              if (pudoEntrar) {
+                agregarComensalVisual(idComensal);
+                // simulator.llegadaComensal(comensal);
+              } else {
+                esperarComensal(idComensal);
+              }
+            }
+
+          } catch (Exception e) {
+            e.printStackTrace();
+            showMessage("error: " + e.getMessage());
+          }
+
+        });
+
+        if (idComensal > 100) {
+          sigue = false;
+        }
+        hilosComensales.add(hiloComensal);
+      }
+      hilosComensales.forEach(Thread::start);
+    }).thenRun(() -> {
+      showMessage("Programa Completado");
+    }); //
+    // comensal
+
   }
 
   private void agregarComensalVisual(int id) {
@@ -119,6 +163,7 @@ public class Animacion extends GameApplication {
       Timeline timeline = new Timeline(new KeyFrame(Duration.seconds(2), event -> moverAMesa(entidadComensal, mesaID)));
       timeline.setCycleCount(1);
       timeline.play();
+
     }
   }
 
@@ -194,11 +239,64 @@ public class Animacion extends GameApplication {
       moverComensal(comensal, 860, 600);
     }, Duration.seconds(2));
     runOnce(() -> {
-      moverComensal(comensal, 660, 600);
+      moverComensal(comensal, 780, 600);
     }, Duration.seconds(3));
     runOnce(() -> {
       moverComensal(comensal, x, y);
+      if (mesa <= 10) {
+        if (statusMesa.getStatus()) {
+          runOnce(() -> {
+            salirComensal(comensal);
+          }, Duration.seconds(1));
+        }
+      }
     }, Duration.seconds(4));
+
   }
 
+  private void salirComensal(Entity comensal) {
+    Timeline timeline = new Timeline(new KeyFrame(Duration.seconds(3), event -> moverComensal(comensal, 780, 610)));
+    timeline.setCycleCount(3);
+    timeline.play();
+    runOnce(() -> {
+      moverComensal(comensal, 860, 610);
+    }, Duration.seconds(1));
+    runOnce(() -> {
+      moverComensal(comensal, 920, 700);
+    }, Duration.seconds(2));
+    runOnce(() -> {
+      moverComensal(comensal, 920, 740);
+    }, Duration.seconds(3));
+    Timeline timeline2 = new Timeline(new KeyFrame(Duration.seconds(4), event -> eliminarElemento(comensal)));
+    timeline2.setCycleCount(4);
+    timeline2.play();
+  }
+
+  private void esperarComensal(int id) {
+    boolean mesaVacia = true;
+    int mesaID = id;
+    int x = 20 * id;
+    int lugar = 1000 - x;
+    Texture texturaComensal = getAssetLoader().loadTexture("comensal.png");
+    Entity entidadComensal = entityBuilder()
+        .at(50, 800) // Punto inicial
+        .view(texturaComensal)
+        .buildAndAttach();
+
+    // showMessage("Comensal " + id + " llegó al restaurante.");
+    runOnce(() -> {
+      moverComensal(entidadComensal, lugar, 720);
+    }, Duration.seconds(2)); // Mover a la recepción
+    if (mesaVacia) {
+      mesaVacia = false;
+      Timeline timeline = new Timeline(new KeyFrame(Duration.seconds(2), event -> moverAMesa(entidadComensal, mesaID)));
+      timeline.setCycleCount(1);
+      timeline.play();
+
+    }
+  }
+
+  private void eliminarElemento(Entity entidad) {
+    entidad.removeFromWorld();
+  }
 }
